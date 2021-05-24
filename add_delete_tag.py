@@ -4,19 +4,18 @@ import boto3
 
 
 def add_tag(event, context):
-    db_resource = boto3.resouce('dynamodb')
-    table = db_resource.Table('xxx') # not sure the table name
+    dynamodb = boto3.client('dynamodb')
+    TABLE_NAME = 'TAG'
+    data = json.loads(event['body']) 
     if event['queryStringparameters'] is not None:
-        etag = event['queryStringParameters']['etags']
-        tag = event['queryStringParameters']['tag']
-    # user = event['requestContext']['identity']['user']
-    # print(user)
-    # user = 'AWS:' + user
-    # etags = []
+        tag = data['queryStringParameters']['tag']
+        url = data['queryStringParameters']['url']
+
         try:
-            response = table.update_item(
+            response = client.update_item(
+                TABLE_NAME='TAG',
                 Key={
-                    'etag': etag
+                    'url': url
                 },
                 UpdateExpression='SET tags = list_append(tags, :t)',
                 ExpressionAttributeValues={
@@ -37,14 +36,16 @@ def add_tag(event, context):
 
 
 def delete_tag(event, context):
-    db_resource = boto3.resouce('dynamodb')
-    table = db_resource.Table('xxx') # not sure the table name
-    if event['queryStringparameters'] is not None:
-        etag = event['queryStringParameters']['etags']
+    dynamodb = boto3.client('dynamodb')
+    TABLE_NAME = 'TAG'
+    data = json.loads(event['body']) 
+    if data['queryStringparameters'] is not None:
+        url = data['queryStringParameters']['url']
         try:
-            response = table.delete_item(
+            response = client.delete_item(
+                TABLE_NAME='TAG',
                 Key={
-                    'etag': etag
+                    'url': url
                 }
             )
             print(response)
