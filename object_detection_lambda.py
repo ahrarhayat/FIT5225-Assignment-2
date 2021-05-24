@@ -130,13 +130,13 @@ key2 = 'yolov3-tiny.cfg'
 key3 = 'yolov3-tiny.weights'
 s3_resource1 = boto3.resource('s3')
 s3_bucket = s3_resource1.Bucket(bucket)
-s3_obj = s3_bucket.Object(key=key1)
+s3_obj1 = s3_bucket.Object(key=key1)
 s3_resource2 = boto3.resource('s3')
 s3_bucket = s3_resource2.Bucket(bucket)
-s3_obj = s3_bucket.Object(key=key2)
+s3_obj2 = s3_bucket.Object(key=key2)
 s3_resource3 = boto3.resource('s3')
 s3_bucket = s3_resource3.Bucket(bucket)
-s3_obj = s3_bucket.Object(key=key3)
+s3_obj3 = s3_bucket.Object(key=key3)
         
 
 
@@ -160,9 +160,9 @@ def lambda_handler(event, context):
     # read yolo files from bucket 
     #boto to get file from bucket
     
-    labels = s3_resource1
-    cfg = s3_resource2
-    weights = s3_resource3
+    labels = s3_obj1
+    cfg = s3_obj2
+    weights = s3_obj3
     
     # do obejct detection
     
