@@ -2,14 +2,14 @@ import json
 import boto3
 import base64
 
-dynamodb = boto3.client('dynamodb')
 TABLE_NAME = 'TAG'
 
 
-def get_urls(response):
+def get_urls(tags, items):
     url_list = []
-    for item in response['Items']:
-        url_list.append(item['url']['S'])
+    for item in items:
+        if set(item['tags']) & set(tags) == set(tags):
+            url_list.append(item['url'])
     return url_list
 
 
@@ -19,29 +19,19 @@ def lambda_handler(event, context):
         data = json.loads(event['body'])  # request have body
         tags_encode = data['tags']  # user's tags request
 
-        # tags = base64.b64decode(tags_encode)  # list of tags
+        # tags = base64.b64decode(tags_encode)  # list of tags. not sure will have encoded message or not
+        urls = []
+        tags = set(tags_encode)  # remove repeated tags
+        try:
+            if len(tags) != 0:
+                dynamodb = boto3.resource('dynamodb')
+                table = dynamodb.Table(TABLE_NAME)
+                response = table.scan()
+                items = response['Items']
+                urls = get_urls(tags, items)
 
-        tags = list(set(tags_encode))  # remove repeated tags
-
-        url_set = set()
-        i = 0
-        tags_num = len(tags)
-
-        # assume we have two tables, one is url table, one is tags table
-        while i < tags_num:
-            response = dynamodb.query(
-                TableName=TABLE_NAME,
-                KeyConditionExpression='tag_title = :tag_title',
-                ExpressionAttributeValues={
-                    ':tag_title': {'S': tags[i]}
-                }
-            )
-
-            if i == 0:
-                url_set = set(get_urls(response))
-            else:
-                url_set = url_set & set(get_urls(response))
-            i += 1
+        except Exception:
+            print("Getting items failed")
 
         return {
             "statusCode": 200,
@@ -49,14 +39,6 @@ def lambda_handler(event, context):
                 "Content-Type": "application/json"
             },
             "body": json.dumps({
-                "links": list(url_set)
+                "links": urls
             })
         }
-
-
-'''
-{
-  "body": "{\"tags\": [\"cat\", \"person\"]}",
-  "httpMethod": "POST"
-}
-'''
