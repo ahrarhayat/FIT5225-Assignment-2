@@ -11,7 +11,7 @@ import boto3
 
 
 # construct the argument parse and parse the arguments
-confthres = 0.5
+confthres = 0.3
 nmsthres = 0.1
 s3 = boto3.client('s3')
 
@@ -118,27 +118,21 @@ def do_prediction(image, net, LABELS):
                                          "width": boxes[i][3]}})
         return result
         
-## argument
-#if len(sys.argv) != 2:
-    #raise ValueError("Argument list is wrong. Please use the following format:  {} {}".
-          #           format("python object_detection.py", "<yolo_config_folder>"))
+
           
-#This path must be changed to s3 reference
+
 bucket = 'library-bucket-ahrar'
 key1 = 'coco.names'
 key2 = 'yolov3-tiny.cfg'
 key3 = 'yolov3-tiny.weights'
-s3_resource1 = boto3.resource('s3')
-s3_bucket = s3_resource1.Bucket(bucket)
-s3_obj1 = s3_bucket.Object(key=key1)
-s3_resource2 = boto3.resource('s3')
-s3_bucket = s3_resource2.Bucket(bucket)
-s3_obj2 = s3_bucket.Object(key=key2)
-s3_resource3 = boto3.resource('s3')
-s3_bucket = s3_resource3.Bucket(bucket)
-s3_obj3 = s3_bucket.Object(key=key3)
-        
+key4 = '000000007454.jpg'
 
+s3_resource = boto3.resource('s3')
+s3_bucket = s3_resource.Bucket(bucket)
+s3_obj1 = s3_bucket.Object(key=key1)
+s3_obj2 = s3_bucket.Object(key=key2)
+s3_obj3 = s3_bucket.Object(key=key3)
+s3_obj4 = s3_bucket.Object(key=key4)
 
 #print(response)
 #yolo_path = str(response)
@@ -160,24 +154,34 @@ def lambda_handler(event, context):
     # read yolo files from bucket 
     #boto to get file from bucket
     
-    labels = s3_obj1
-    cfg = s3_obj2
-    weights = s3_obj3
-    
+    labels = s3_obj1.get().get('Body').read()
+    print(labels)
+    cfg = s3_obj2.get().get('Body').read()
+    weights = s3_obj3.get().get('Body').read()
+
     # do obejct detection
     
     
     # insert in db
-    
-    # TODO implement
+    #print(s3_obj4)
+    #s3_obj4.download_file(filename)
+    #imgF=mpimg.imread('B01jp2')
+    #my_string = ''
+    img_data = s3_obj4.get().get('Body').read()
+
     #image from the s3 bucket
-    #img = Image.open(io.BytesIO(image_data))
+    img = Image.open(io.BytesIO(img_data))
+    npimg = np.array(img)
+    image = npimg.copy()
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    #print(image)
         # now that the image is extracted, use the same methods as before and use the methods to get the objects
         # img = cv2.imread(filename)
     #npimg = np.array(img)
     #image = npimg.copy()
     #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         # load the neural net.  Should be local to this method as its multi-threaded endpoint
-    #nets = load_model(CFG, Weights)
-    #result = do_prediction(image, nets, Lables)
+    nets = load_model(cfg, weights)
+    result = do_prediction(image, nets, labels)
+    print(result)
     
