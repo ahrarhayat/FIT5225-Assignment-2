@@ -153,9 +153,12 @@ def lambda_handler(event, context):
     
     # read yolo files from bucket 
     #boto to get file from bucket
-    
+    #make this into an array
     labels = s3_obj1.get().get('Body').read()
-    print(labels)
+    labels = str(labels)
+    labels = labels[1:]
+    labels = labels.split("\\n")
+    #print(labels)
     cfg = s3_obj2.get().get('Body').read()
     weights = s3_obj3.get().get('Body').read()
 
