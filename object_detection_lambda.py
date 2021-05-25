@@ -125,7 +125,7 @@ bucket = 'library-bucket-ahrar'
 key1 = 'coco.names'
 key2 = 'yolov3-tiny.cfg'
 key3 = 'yolov3-tiny.weights'
-key4 = '000000007454.jpg'
+key4 = '000000012807.jpg'
 
 s3_resource = boto3.resource('s3')
 s3_bucket = s3_resource.Bucket(bucket)
@@ -156,7 +156,9 @@ def lambda_handler(event, context):
     #make this into an array
     labels = s3_obj1.get().get('Body').read()
     labels = str(labels)
-    labels = labels[1:]
+    labels = labels[2:]
+    labels.replace('"','')
+    #print(labels)
     labels = labels.split("\\n")
     #print(labels)
     cfg = s3_obj2.get().get('Body').read()
