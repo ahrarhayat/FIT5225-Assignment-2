@@ -19,7 +19,7 @@ def add_tag(event, context):
                 },
                 UpdateExpression='SET tags = list_append(tags, :t)',
                 ExpressionAttributeValues={
-                    ':t':[tags]
+                    ':t':tags
                 },
                 ReturnValues='UPDATED_NEW'
             )
