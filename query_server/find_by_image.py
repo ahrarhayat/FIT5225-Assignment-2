@@ -4,24 +4,16 @@ import numpy as np
 import time
 import cv2
 import boto3
+import os
 
 # construct the argument parse and parse the arguments
 confthres = 0.5
 nmsthres = 0.1
 TABLE_NAME = 'TAG'
 
-dynamodb_resource = boto3.resource('dynamodb')
-s3_resource = boto3.resource('s3')
 
-# This path must be changed to s3 reference
-bucket = 'tagtag-bucket'
-key1 = 'coco.names'
-key2 = 'yolov3-tiny.cfg'
-key3 = 'yolov3-tiny.weights'
-
-
-def get_s3_object(key):
-    return s3_resource.Bucket(bucket).Object(key=key)
+def get_key(folder_name, key_name):
+    return os.path.join(folder_name, key_name)
 
 
 def get_urls(tags, items):
@@ -107,24 +99,25 @@ def do_prediction(image, net, LABELS):
     detected_tags = []
     if len(idxs) > 0:
         for i in idxs.flatten():
-            detected_tag = {}
-
-            rectangle = {
-                'height': boxes[i][3],
-                'left': boxes[i][0],
-                'top': boxes[i][1],
-                'width': boxes[i][2]
-            }
-
-            detected_tag = {
-                'label': LABELS[classIDs[i]],
-                'accuracy': confidences[i],
-                'rectangle': rectangle
-            }
-
-            detected_tags.append(detected_tag)
+            detected_tags.append(LABELS[classIDs[i]])
 
     return detected_tags
+
+
+dynamodb_resource = boto3.resource('dynamodb')
+
+# This path must be changed to s3 reference
+bucket = 'tagtag-bucket'
+
+folder = 'yolo_tiny_configs'
+key1 = 'coco.names'
+key2 = 'yolov3-tiny.cfg'
+key3 = 'yolov3-tiny.weights'
+
+s3_resource = boto3.resource('s3')
+s3_obj1 = s3_resource.Object(bucket, key=get_key(folder, key1))
+s3_obj2 = s3_resource.Object(bucket, key=get_key(folder, key2))
+s3_obj3 = s3_resource.Object(bucket, key=get_key(folder, key3))
 
 
 def lambda_handler(event, context):
@@ -132,15 +125,21 @@ def lambda_handler(event, context):
 
     data = json.loads(event['body'])
     image_encode = data['image']
-    image = base64.b64decode(image_encode)  # ??
+    image_decode = base64.b64decode(image_encode)  # ??
 
-    labels = get_s3_object(key1)
-    cfg = get_s3_object(key2)
-    weights = get_s3_object(key3)
+    labels = s3_obj1.get().get('Body').read()
+    labels = str(labels)
+    labels = labels[2:]
+    labels.replace('"', '')
+    labels = labels.split("\\n")
+
+    cfg = s3_obj2.get().get('Body').read()
+    weights = s3_obj3.get().get('Body').read()
 
     # https://stackoverflow.com/questions/17170752/python-opencv-load-image-from-byte-string
-    image_np = np.frombuffer(image, np.uint8)
+    image_np = np.frombuffer(image_decode, np.uint8)
     img = cv2.imdecode(image_np, 1)
+
     np_img = np.array(img)
     image = np_img.copy()
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -160,7 +159,6 @@ def lambda_handler(event, context):
             urls = get_urls(tags, items)
 
     except Exception:
-
         print("Getting items failed")
 
     return {

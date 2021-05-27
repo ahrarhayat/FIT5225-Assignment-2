@@ -1,28 +1,29 @@
 import json
 import boto3
 
-
+TABLE_NAME = 'a3test'
 
 def add_tag(event, context):
-    dynamodb = boto3.client('dynamodb')
-    TABLE_NAME = 'TAG'
-    data = json.loads(event['body']) 
-    if event['queryStringparameters'] is not None:
-        tag = data['queryStringParameters']['tag']
-        url = data['queryStringParameters']['url']
+    db_resource = boto3.resource('dynamodb')
+    table = db_resource.Table(TABLE_NAME) 
+    data = json.loads(event['body'])
+
+    if data[0]['url'] is not None:
+        tags = data[1]['tags']
+        url = data[0]['url']
 
         try:
-            response = client.update_item(
-                TABLE_NAME='TAG',
+            response = table.update_item(
                 Key={
                     'url': url
                 },
                 UpdateExpression='SET tags = list_append(tags, :t)',
                 ExpressionAttributeValues={
-                    ':t':[tag]
+                    ':t':tags
                 },
-                returnValue='UPDATE_NEW'
+                ReturnValues='UPDATED_NEW'
             )
+            
             print(response)
             return{
                 'statusCode': 200
@@ -34,18 +35,19 @@ def add_tag(event, context):
         }
             
 
+def delete_item(event, context):
+    db_resource = boto3.resource('dynamodb')
+    table = db_resource.Table(TABLE_NAME) 
+    data = json.loads(event['body'])
 
-def delete_tag(event, context):
-    dynamodb = boto3.client('dynamodb')
-    TABLE_NAME = 'TAG'
-    data = json.loads(event['body']) 
-    if data['queryStringparameters'] is not None:
-        url = data['queryStringParameters']['url']
+    if data[0]['url'] is not None:
+        tags = data[1]['tags']
+        url = data[0]['url']
+
         try:
-            response = client.delete_item(
-                TABLE_NAME='TAG',
+            response = table.delete_item(
                 Key={
-                    'url': url
+                    'url' :url
                 }
             )
             print(response)
@@ -60,6 +62,19 @@ def delete_tag(event, context):
 
 
 
+def lambda_handler(event, context):
+    print(event)
+    if event['httpMethod'] == 'PUT':
+        return add_tag(event, context)
+    elif event['httpMethod'] == 'DELETE':
+        return delete_item(event, context)
+    else:
+        return{
+            'statusCode': 200
+        }
 
 
-
+""" {
+  "body": "[{\"url\":\"url3\"},{\"tags\": [\"watermelon\",\"person\"]}]",
+  "httpMethod": "PUT"
+} """
