@@ -9,18 +9,29 @@ import os
 # construct the argument parse and parse the arguments
 confthres = 0.5
 nmsthres = 0.1
-TABLE_NAME = 'TAG'
+TABLE_NAME = 'IMAGE_URL'
 
+# s3 = boto3.client('s3')
+dynamodb_resource = boto3.resource('dynamodb')
 
-def get_key(folder_name, key_name):
-    return os.path.join(folder_name, key_name)
+# This path must be changed to s3 reference
+bucket = 'tagtag-yolo-bucket'
+
+key1 = 'coco.names'
+key2 = 'yolov3-tiny.cfg'
+key3 = 'yolov3-tiny.weights'
+
+s3_resource = boto3.resource('s3')
+s3_obj1 = s3_resource.Object(bucket, key=key1)
+s3_obj2 = s3_resource.Object(bucket, key=key2)
+s3_obj3 = s3_resource.Object(bucket, key=key3)
 
 
 def get_urls(tags, items):
     url_list = []
     for item in items:
         if set(item['tags']) & set(tags) == set(tags):
-            url_list.append(item['url'])
+            url_list.append(item['url_list'])
     return url_list
 
 
@@ -104,22 +115,6 @@ def do_prediction(image, net, LABELS):
     return detected_tags
 
 
-dynamodb_resource = boto3.resource('dynamodb')
-
-# This path must be changed to s3 reference
-bucket = 'tagtag-bucket'
-
-folder = 'yolo_tiny_configs'
-key1 = 'coco.names'
-key2 = 'yolov3-tiny.cfg'
-key3 = 'yolov3-tiny.weights'
-
-s3_resource = boto3.resource('s3')
-s3_obj1 = s3_resource.Object(bucket, key=get_key(folder, key1))
-s3_obj2 = s3_resource.Object(bucket, key=get_key(folder, key2))
-s3_obj3 = s3_resource.Object(bucket, key=get_key(folder, key3))
-
-
 def lambda_handler(event, context):
     print('Lamda handler started')
 
@@ -145,9 +140,8 @@ def lambda_handler(event, context):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     nets = load_model(cfg, weights)  # yolo model
-    detected_tags = do_prediction(image, nets, labels)  # invoke detect object function?
+    detected_tags = do_prediction(image, nets, labels)
 
-    # do obejct detection
     urls = []
     tags = set(detected_tags)  # remove repeated tags
 

@@ -2,14 +2,14 @@ import json
 import boto3
 import base64
 
-TABLE_NAME = 'TAG'
+TABLE_NAME = 'IMAGE_URL'
 
 
 def get_urls(tags, items):
     url_list = []
     for item in items:
         if set(item['tags']) & set(tags) == set(tags):
-            url_list.append(item['url'])
+            url_list.append(item['url_list'])
     return url_list
 
 
