@@ -11,9 +11,10 @@ import boto3
 
 
 # construct the argument parse and parse the arguments
-confthres = 0.3
+confthres = 0.5
 nmsthres = 0.1
 s3 = boto3.client('s3')
+basic_url = 'https://image-storing-bucket-ahrar.s3.amazonaws.com/'
 
 #def get_labels(labels_path):
     # load the COCO class labels our YOLO model was trained on
@@ -113,9 +114,7 @@ def do_prediction(image, net, LABELS):
         result = []
         #loop over the objects and put them in an array and return the result
         for i in idxs.flatten():
-            result.append({"label": LABELS[classIDs[i]], "accuracy": confidences[i],
-                           "rectangle": {"height": boxes[i][0], "left": boxes[i][1], "top": boxes[i][2],
-                                         "width": boxes[i][3]}})
+            result.append({"tags": LABELS[classIDs[i]] })
         return result
         
 
@@ -188,5 +187,7 @@ def lambda_handler(event, context):
         # load the neural net.  Should be local to this method as its multi-threaded endpoint
     nets = load_model(cfg, weights)
     result = do_prediction(image, nets, labels)
+    url = {"url": basic_url}
+    print(url)
     print(result)
     
