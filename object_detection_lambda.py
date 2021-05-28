@@ -129,23 +129,17 @@ bucket = 'library-bucket-ahrar'
 key1 = 'coco.names'
 key2 = 'yolov3-tiny.cfg'
 key3 = 'yolov3-tiny.weights'
-key4 = '000000007454.jpg'
+#key4 = '000000007454.jpg'
 
 
 s3_bucket = s3_resource.Bucket(bucket)
 s3_obj1 = s3_bucket.Object(key=key1)
 s3_obj2 = s3_bucket.Object(key=key2)
 s3_obj3 = s3_bucket.Object(key=key3)
-s3_obj4 = s3_bucket.Object(key=key4)
+#s3_obj4 = s3_bucket.Object(key=key4)
 
 
-#print(response)
-#yolo_path = str(response)
 
-## Yolov3-tiny versrion
-#labelsPath = "coco.names"
-#cfgpath = "yolov3-tiny.cfg"
-#wpath = "yolov3-tiny.weights"
 
 
 def lambda_handler(event, context):
@@ -200,9 +194,10 @@ def lambda_handler(event, context):
         for i in result:
             if i not in tags:
                 tags.append(i)
+        tags = list(tags)
             
     else:
-        tags = result
+        tags = list(result)
         
     url = basic_url+keyImage
     print(url)

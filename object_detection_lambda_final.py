@@ -162,14 +162,18 @@ def lambda_handler(event, context):
     nets = load_model(cfg, weights)
     result = do_prediction(image, nets, labels)
     tags = 'abc'
-    if len(result) > 1 :
-        tags = []
-        for i in result:
-            if i not in tags:
-                tags.append(i)
-            
-    else:
-        tags = result
+    if result == None:
+        tags = list(result)
+    else: 
+        
+        if len(result) > 1 :
+            tags = []
+            for i in result:
+                if i not in tags:
+                    tags.append(i)
+            tags = list(tags)   
+        else:
+            tags = list(result)
         
     url = basic_url+keyImage
     print(url)
