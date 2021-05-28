@@ -53,8 +53,10 @@ class FindByTagsComp extends React.Component {
                     <h2> Find By Tags </h2>
                     <p> Please use ',' to separate different tags 'cat,dog,ball' </p>
                     <form onSubmit={this.handleSubmit}>
-                        <input type="text" placeholder="Tags input"
-                            value={this.state.value} onChange={this.handleChange} />
+                        <div>
+                            <textarea cols="30" rows="1" placeholder="Tags input"
+                                value={this.state.value} onChange={this.handleChange} />
+                        </div>
                         <button type="submit" >Submit</button>
                     </form>
                 </div>
