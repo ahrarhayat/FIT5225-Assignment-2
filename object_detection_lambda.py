@@ -8,12 +8,13 @@ import cv2
 from PIL import Image
 import io
 import boto3
+import urllib
 
 
 # construct the argument parse and parse the arguments
 confthres = 0.5
 nmsthres = 0.1
-s3 = boto3.client('s3')
+s3_resource = boto3.resource('s3')
 dynamodb = boto3.client('dynamodb')
 TABLE_NAME = 'image-url-table'
 basic_url = 'https://image-storing-bucket-ahrar.s3.amazonaws.com/'
@@ -122,18 +123,21 @@ def do_prediction(image, net, LABELS):
 
           
 
+
+
 bucket = 'library-bucket-ahrar'
 key1 = 'coco.names'
 key2 = 'yolov3-tiny.cfg'
 key3 = 'yolov3-tiny.weights'
-key4 = '000000012807.jpg'
+key4 = '000000007454.jpg'
 
-s3_resource = boto3.resource('s3')
+
 s3_bucket = s3_resource.Bucket(bucket)
 s3_obj1 = s3_bucket.Object(key=key1)
 s3_obj2 = s3_bucket.Object(key=key2)
 s3_obj3 = s3_bucket.Object(key=key3)
 s3_obj4 = s3_bucket.Object(key=key4)
+
 
 #print(response)
 #yolo_path = str(response)
@@ -147,7 +151,13 @@ s3_obj4 = s3_bucket.Object(key=key4)
 def lambda_handler(event, context):
     
     print('Lamda handler started')
-    
+    bucket2 = event['Records'][0]['s3']['bucket']['name']
+    print(bucket2)
+    key = event['Records'][0]['s3']['object']['key']
+    keyImage = urllib.parse.unquote_plus(key,encoding = 'utf-8')
+    print(keyImage)
+    s3_bucket_2 = s3_resource.Bucket(bucket2)
+    s3_obj5 = s3_bucket_2.Object(key=key)
     
     # read image which is uplaoded to bucker
     
@@ -168,12 +178,7 @@ def lambda_handler(event, context):
     # do obejct detection
     
     
-    # insert in db
-    #print(s3_obj4)
-    #s3_obj4.download_file(filename)
-    #imgF=mpimg.imread('B01jp2')
-    #my_string = ''
-    img_data = s3_obj4.get().get('Body').read()
+    img_data = s3_obj5.get().get('Body').read()
 
     #image from the s3 bucket
     img = Image.open(io.BytesIO(img_data))
@@ -189,15 +194,25 @@ def lambda_handler(event, context):
         # load the neural net.  Should be local to this method as its multi-threaded endpoint
     nets = load_model(cfg, weights)
     result = do_prediction(image, nets, labels)
-    tags = list(result)
-    url = basic_url+key4
+    tags = 'abc'
+    if len(result) > 1 :
+        tags = []
+        for i in result:
+            if i not in tags:
+                tags.append(i)
+            
+    else:
+        tags = result
+        
+    url = basic_url+keyImage
+    print(url)
+    print(tags)
     #image_url = jsonify(url=url)
-    
     data = {}
     data['image_url'] = {'S' : url}
     data['tags'] = {'SS' : tags}
     dynamodb.put_item(TableName=TABLE_NAME, Item=data)
     print('Inserted into db')
-    print(url)
-    print(tags)
+    
+    #print(keyImage)
     
