@@ -1,21 +1,21 @@
 import json
 import boto3
 
-TABLE_NAME = 'a3test'
+TABLE_NAME = 'IMAGE_URL'
 
 def add_tag(event, context):
     db_resource = boto3.resource('dynamodb')
     table = db_resource.Table(TABLE_NAME) 
     data = json.loads(event['body'])
 
-    if data[0]['url'] is not None:
+    if data[0]['url_list'] is not None:
         tags = data[1]['tags']
-        url = data[0]['url']
+        url = data[0]['url_list']
 
         try:
             response = table.update_item(
                 Key={
-                    'url': url
+                    'url_list': url
                 },
                 UpdateExpression='SET tags = list_append(tags, :t)',
                 ExpressionAttributeValues={
@@ -40,14 +40,14 @@ def delete_item(event, context):
     table = db_resource.Table(TABLE_NAME) 
     data = json.loads(event['body'])
 
-    if data[0]['url'] is not None:
+    if data[0]['url_list'] is not None:
         tags = data[1]['tags']
-        url = data[0]['url']
+        url = data[0]['url_list']
 
         try:
             response = table.delete_item(
                 Key={
-                    'url' :url
+                    'url_list' :url
                 }
             )
             print(response)
@@ -64,7 +64,7 @@ def delete_item(event, context):
 
 def lambda_handler(event, context):
     print(event)
-    if event['httpMethod'] == 'PUT':
+    if event['httpMethod'] == 'POST':
         return add_tag(event, context)
     elif event['httpMethod'] == 'DELETE':
         return delete_item(event, context)
@@ -74,7 +74,8 @@ def lambda_handler(event, context):
         }
 
 
+
 """ {
-  "body": "[{\"url\":\"url3\"},{\"tags\": [\"watermelon\",\"person\"]}]",
-  "httpMethod": "PUT"
+  "body": "[{\"url_list\":\"url_test1\"},{\"tags\": [\"watermelon\",\"person\"]}]",
+  "httpMethod": "POST"
 } """
