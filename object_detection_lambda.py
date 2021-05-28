@@ -14,6 +14,8 @@ import boto3
 confthres = 0.5
 nmsthres = 0.1
 s3 = boto3.client('s3')
+dynamodb = boto3.client('dynamodb')
+TABLE_NAME = 'image-url-table'
 basic_url = 'https://image-storing-bucket-ahrar.s3.amazonaws.com/'
 
 #def get_labels(labels_path):
@@ -114,7 +116,7 @@ def do_prediction(image, net, LABELS):
         result = []
         #loop over the objects and put them in an array and return the result
         for i in idxs.flatten():
-            result.append({"tags": LABELS[classIDs[i]] })
+            result.append(LABELS[classIDs[i]])
         return result
         
 
@@ -187,7 +189,15 @@ def lambda_handler(event, context):
         # load the neural net.  Should be local to this method as its multi-threaded endpoint
     nets = load_model(cfg, weights)
     result = do_prediction(image, nets, labels)
-    url = {"url": basic_url}
+    tags = list(result)
+    url = basic_url+key4
+    #image_url = jsonify(url=url)
+    
+    data = {}
+    data['image_url'] = {'S' : url}
+    data['tags'] = {'SS' : tags}
+    dynamodb.put_item(TableName=TABLE_NAME, Item=data)
+    print('Inserted into db')
     print(url)
-    print(result)
+    print(tags)
     
