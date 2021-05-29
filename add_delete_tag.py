@@ -8,30 +8,36 @@ def add_tag(event, context):
     table = db_resource.Table(TABLE_NAME) 
     data = json.loads(event['body'])
 
-    if data[0]['url_list'] is not None:
-        tags = data[1]['tags']
-        url = data[0]['url_list']
+    if data['url'] is not None:
+        tags = data['tags']
+        url = data['url']
 
         try:
             response = table.update_item(
                 Key={
                     'url_list': url
                 },
-                UpdateExpression='SET tags = list_append(tags, :t)',
+                UpdateExpression='ADD tags :t',
                 ExpressionAttributeValues={
-                    ':t':tags
+                    ':t': set(tags)
                 },
                 ReturnValues='UPDATED_NEW'
             )
             
             print(response)
             return{
-                'statusCode': 200
+                'statusCode': 200,
+                "headers": {
+                    'Access-Control-Allow-Origin': '*'
+                }
             }
         except Exception as e:
             print(e)
         return{
-            'statusCode': 500
+            'statusCode': 500,
+            "headers": {
+                'Access-Control-Allow-Origin': '*'
+            }
         }
             
 
@@ -40,10 +46,9 @@ def delete_item(event, context):
     table = db_resource.Table(TABLE_NAME) 
     data = json.loads(event['body'])
 
-    if data[0]['url_list'] is not None:
-        tags = data[1]['tags']
-        url = data[0]['url_list']
+    if data['url'] is not None:
 
+        url = data['url']
         try:
             response = table.delete_item(
                 Key={
@@ -52,30 +57,36 @@ def delete_item(event, context):
             )
             print(response)
             return{
-                'statusCode': 200
+                'statusCode': 200,
+            "headers": {
+                'Access-Control-Allow-Origin': '*'
+            }
             }
         except Exception as e:
             print(e)
         return{
-            'statusCode': 500
+            'statusCode': 500,
+            "headers": {
+                'Access-Control-Allow-Origin': '*'
+            }
     }
 
 
 
 def lambda_handler(event, context):
+    
     print(event)
+    
     if event['httpMethod'] == 'POST':
         return add_tag(event, context)
     elif event['httpMethod'] == 'DELETE':
         return delete_item(event, context)
     else:
         return{
-            'statusCode': 200
+            
+            'statusCode': 200,
+            "headers": {
+                'Access-Control-Allow-Origin': '*'
+            }
         }
 
-
-
-""" {
-  "body": "[{\"url_list\":\"url_test1\"},{\"tags\": [\"watermelon\",\"person\"]}]",
-  "httpMethod": "POST"
-} """
