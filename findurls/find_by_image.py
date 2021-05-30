@@ -117,50 +117,53 @@ def do_prediction(image, net, LABELS):
 
 def lambda_handler(event, context):
     print('Lamda handler started')
+    if event['httpMethod'] == 'POST':
+        data = json.loads(event['body'])
+        image_encode = data['file']
+        image_decode = base64.b64decode(image_encode)
 
-    data = json.loads(event['body'])
-    image_encode = data['image']
-    image_decode = base64.b64decode(image_encode)  # ??
+        labels = s3_obj1.get().get('Body').read()
+        labels = str(labels)
+        labels = labels[2:]
+        labels.replace('"', '')
+        labels = labels.split("\\n")
 
-    labels = s3_obj1.get().get('Body').read()
-    labels = str(labels)
-    labels = labels[2:]
-    labels.replace('"', '')
-    labels = labels.split("\\n")
+        cfg = s3_obj2.get().get('Body').read()
+        weights = s3_obj3.get().get('Body').read()
 
-    cfg = s3_obj2.get().get('Body').read()
-    weights = s3_obj3.get().get('Body').read()
+        # https://stackoverflow.com/questions/17170752/python-opencv-load-image-from-byte-string
+        image_np = np.frombuffer(image_decode, np.uint8)
+        img = cv2.imdecode(image_np, 1)
 
-    # https://stackoverflow.com/questions/17170752/python-opencv-load-image-from-byte-string
-    image_np = np.frombuffer(image_decode, np.uint8)
-    img = cv2.imdecode(image_np, 1)
+        np_img = np.array(img)
+        image = np_img.copy()
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    np_img = np.array(img)
-    image = np_img.copy()
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        nets = load_model(cfg, weights)  # yolo model
+        detected_tags = do_prediction(image, nets, labels)
 
-    nets = load_model(cfg, weights)  # yolo model
-    detected_tags = do_prediction(image, nets, labels)
+        urls = []
+        tags = set(detected_tags)  # remove repeated tags
 
-    urls = []
-    tags = set(detected_tags)  # remove repeated tags
+        try:
+            if len(tags) != 0:
+                table = dynamodb_resource.Table(TABLE_NAME)
+                response = table.scan()
+                items = response['Items']
+                urls = get_urls(tags, items)
 
-    try:
-        if len(tags) != 0:
-            table = dynamodb_resource.Table(TABLE_NAME)
-            response = table.scan()
-            items = response['Items']
-            urls = get_urls(tags, items)
+        except Exception:
+            print("Getting items failed")
 
-    except Exception:
-        print("Getting items failed")
-
-    return {
-        "statusCode": 200,
-        "headers": {
-            "Content-Type": "application/json"
-        },
-        "body": json.dumps({
-            "links": urls
-        })
-    }
+        return {
+            "statusCode": 200,
+            "headers": {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                'Access-Control-Allow-Credentials': 'true',
+                'Access-Control-Allow-Methods': 'POST'
+            },
+            "body": json.dumps({
+                "links": urls
+            })
+        }

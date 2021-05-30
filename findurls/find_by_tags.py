@@ -17,6 +17,7 @@ def lambda_handler(event, context):
     print(event)
     if event['httpMethod'] == 'POST':
         data = json.loads(event['body'])  # request have body
+
         tags_encode = data['tags']  # user's tags request
 
         # tags = base64.b64decode(tags_encode)  # list of tags. not sure will have encoded message or not
@@ -36,7 +37,7 @@ def lambda_handler(event, context):
         return {
             "statusCode": 200,
             "headers": {
-                "Content-Type": "application/json"
+                'Access-Control-Allow-Origin': '*'
             },
             "body": json.dumps({
                 "links": urls
