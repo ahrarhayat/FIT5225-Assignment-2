@@ -191,10 +191,11 @@ def lambda_handler(event, context):
     tags = 'abc'
     url = basic_url+keyImage
     if result == None:
-        tags = str(result)
+        tags = []
+        tags.append('No Tags')
         data = {}
         data['image_url'] = {'S' : url}
-        data['tags'] = {'S' : tags}
+        data['tags'] = {'SS' : tags}
         dynamodb.put_item(TableName=TABLE_NAME, Item=data)
         
     else:
