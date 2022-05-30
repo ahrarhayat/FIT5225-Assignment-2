@@ -10,3 +10,4 @@ An application that takes an image as an input, and then uses object detection a
   - api gateway
 
 - Python
+  - openCV
