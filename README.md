@@ -4,9 +4,9 @@ An application that takes an image as an input, and then uses object detection a
 
 ## Tect use
 - AWS
--- lambda
--- s3
--- dynamoDB
--- api gateway
+  - lambda
+  - s3
+  - dynamoDB
+  - api gateway
 
 - Python
